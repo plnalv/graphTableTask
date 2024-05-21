@@ -261,10 +261,10 @@ SELECT @@SERVERNAME
 --https://raw.githubusercontent.com/plnalv/graphTableTask/main/images/artist1.png
 SELECT A1.ID IdFirst
  , A1.name AS First
- , CONCAT(N'co-authors',A1.id) AS [First image name]
+ , CONCAT(N'artist',A1.id) AS [First image name]
  , A2.ID AS IdSecond
  , A2.name AS Second
- , CONCAT(N'co-authors',A2.id) AS [Second image name]
+ , CONCAT(N'artist',A2.id) AS [Second image name]
 FROM dbo.Artist AS A1
  , dbo.Featuring AS F
  , dbo.Artist AS A2
