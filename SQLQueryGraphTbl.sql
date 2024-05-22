@@ -28,16 +28,16 @@ CREATE TABLE Album
 ) AS NODE;
 
 
-CREATE TABLE Featuring AS EDGE;--����� "������ ������������� � ��������" 
-CREATE TABLE Performs  AS EDGE;-- ����� ������ ��������� �����
-CREATE TABLE IncludedIn AS EDGE;-- ����� ����� ������ � ������
+CREATE TABLE Featuring AS EDGE;--Связь "артист соавторствует с артистом" 
+CREATE TABLE Performs  AS EDGE;-- Связь "артист исполняет песню"
+CREATE TABLE IncludedIn AS EDGE;-- Связь "песня входит в альбом"
 
 ALTER TABLE Featuring ADD CONSTRAINT EC_Featuring CONNECTION (Artist TO Artist);
 ALTER TABLE Performs ADD CONSTRAINT EC_Performs CONNECTION (Artist TO Song);
 ALTER TABLE IncludedIn ADD CONSTRAINT EC_IncludedIn CONNECTION (Song TO Album);
 
 
---���������� ������ �����
+--Заполнение таблиц узлов
 
 INSERT INTO Artist (id, name)
 VALUES (1, N'Beyonce'),
@@ -94,7 +94,7 @@ SELECT *
 FROM Album;
 
 
---���������� ������ �����
+--Заполнение таблиц ребер
 INSERT INTO Featuring ($from_id, $to_id)
 VALUES ((SELECT $node_id FROM Artist WHERE id = 1),(SELECT $node_id FROM Artist WHERE id = 7)),
  ((SELECT $node_id FROM Artist WHERE id =2),(SELECT $node_id FROM Artist WHERE id = 8)),
@@ -159,9 +159,9 @@ VALUES ((SELECT $node_id FROM Song WHERE id = 1),(SELECT $node_id FROM Album WHE
 SELECT *
 FROM IncludedIn;
 
---������� �� ������� � �������� ��������
+--Запросы на выборку к графовым таблицам
 --MATCH
---� ��� � ������� ���� ���?
+--с кем у артиста есть фит?
 SELECT Artist1.name
  , Artist2.name AS [co-author name]
 FROM Artist AS Artist1
@@ -170,7 +170,7 @@ FROM Artist AS Artist1
 WHERE MATCH(Artist1-(Featuring)->Artist2)
  AND Artist1.name = N'Miley Cyrus';
 
- --��� ������� �������� Ariana Grande?
+ --кто соавтор соавтора Ariana Grande?
  SELECT artist1.name + N' ����� ��� � ' + artist2.name AS Level1
  , artist2.name + N' ����� ��� � ' + artist3.name AS Level2
 FROM Artist AS artist1
@@ -181,7 +181,7 @@ FROM Artist AS artist1
 WHERE MATCH(artist1-(coauthor1)->artist2-(coauthor2)->artist3)
  AND artist1.name = N'Ariana Grande';
 
- --������� ����� ����� �������� The Weeknd?
+ --автором каких песен является The Weeknd?
 SELECT artist.name + N' - ����� ����� ' + song.name
 FROM Artist AS artist
 	, Performs AS performs
@@ -189,7 +189,7 @@ FROM Artist AS artist
 WHERE MATCH(artist-(performs)->song)
   AND artist.name = N'The Weeknd';
 
---��� ����� ������������� ������� � �� �������:
+--Все песни определенного альбома и его авторы:
 SELECT album.name AS album
 	, song.name AS [song name]
     , artist.name AS artist
@@ -201,7 +201,7 @@ FROM Album AS album
 WHERE MATCH (album<-(IncludedIn)-song<-(Performs)-artist)
 	AND album.name = N'After Hours';
 
--- ��� �����, ������� ������ � �������, ���������� ����� ������������� ����, � �� �������:
+-- все песни, которые входят в альбомы, выпущенные после определенного года, и мх авторы:
 SELECT album.name AS album
      , song.name AS song
      , artist.name AS artist
@@ -213,7 +213,7 @@ FROM Album AS album
 WHERE MATCH (album<-(IncludedIn)-song<-(Performs)-artist)
     AND album.releaseYear > 2020;
 
---�������, ������� ��������� ����� ������������� �����:
+--артисты, исполняющие песни определенного жанра:
 SELECT DISTINCT artist.name AS artist
 FROM Artist AS artist
 	, Performs
@@ -223,7 +223,7 @@ WHERE MATCH (artist-(Performs)->song)
 
 
 --SHORTEST_PATH
---����������� ��������� ����������� ��� The Weeknd:
+--максимально возможное соавторство для The Weeknd:
 SELECT artist1.name AS artist
  , STRING_AGG(artist2.name, '->') WITHIN GROUP (GRAPH PATH) AS
 [co-authorship]
@@ -234,8 +234,8 @@ WHERE MATCH(SHORTEST_PATH(artist1(-(f)->artist2)+))
  AND artist1.name = N'The Weeknd';
 
 
--- ������� ���������� ���� ��� Shawn Mendes ����� ����, ��� Doja Cat ������� ��� � Miley Cyrus
--- �������: ��������� ������ ���� ���������� ���� �� Shawn Mendes �� Miley Cyrus
+-- Находим кратчайшие пути для Shawn Mendes после того, как Doja Cat сделала фит с Miley Cyrus
+-- спойлер: находится только один кратчайший путь от Shawn Mendes до Miley Cyrus
 WITH T1 AS
 (
 SELECT artist1.name AS artist
